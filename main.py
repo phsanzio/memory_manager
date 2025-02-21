@@ -11,6 +11,15 @@ def otimo(array_list, n_molduras):
                 page_faults += 1
                 if len(ram) < n_molduras:
                     ram.append(memory_dict[pages])
+                else:
+                    clock_max = {}
+                    for pages_left in memory_dict[pages:]:
+                        for pages_ram in ram:
+                            if memory_dict[pages_left]['page'] == ram[pages_ram]['page']:
+                                clock_max.setdefault(pages_ram, ram[pages_ram]['page'], memory_dict[pages_left]['acess'])
+                            print (clock_max)
+
+            
                     
 
         clock += 1
@@ -55,7 +64,7 @@ def text_generator(read_file, write_file):
 #Mude a quantidade de arquivos
 n_arquivos = 1
 #Coloque o caminho exato do arquivo, ex: pc/documentos/testes/
-caminho_arquivo = "D:/Usuarios/09877646676/Downloads/testes/"
+caminho_arquivo = ""
 for i in range(0, n_arquivos):
     username = 'Pedro Sanzio e Lucas Martins'
     if i + 1 < 10:
