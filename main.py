@@ -1,31 +1,37 @@
 def otimo(array_list, n_molduras):
-    clock = 0
-    ram = []
-    memory_dict = {}
-    page_faults = 0
+    ram = []  # Lista para representar as molduras na memória
+    page_faults = 0  # Contador de faltas de página
+
+    # Iterar sobre cada acesso no array_list
     for i in range(len(array_list)):
-        memory_dict[i] = {'page': int(array_list[i][0]), 'acess': int(array_list[i][1]), 'type': array_list[i][2], 'bit_R': 0, 'bit_M': 0}
-    for pages in memory_dict:
-        if memory_dict[pages]['acess'] == clock:
-            if pages not in ram:
-                page_faults += 1
-                if len(ram) < n_molduras:
-                    ram.append(memory_dict[pages])
-                else:
-                    clock_max = {}
-                    for pages_left in memory_dict[pages:]:
-                        for pages_ram in ram:
-                            if memory_dict[pages_left]['page'] == ram[pages_ram]['page']:
-                                clock_max.setdefault(pages_ram, ram[pages_ram]['page'], memory_dict[pages_left]['acess'])
-                            print (clock_max)
+        pagina_atual = int(array_list[i][0])  # Página atual sendo acessada
 
-            
-                    
+        # Verificar se a página já está na RAM
+        if pagina_atual not in ram:
+            page_faults += 1  # Incrementar as faltas de página
 
-        clock += 1
-    print(ram)
-    print(page_faults)
+            if len(ram) < n_molduras:  # Há espaço na RAM
+                ram.append(pagina_atual)
+            else:  # Substituir uma página
+                # Encontrar a página que será usada mais tarde ou nunca mais
+                paginas_futuras = [int(array_list[j][0]) for j in range(i + 1, len(array_list))]
+                indices_futuros = []
 
+                for pagina in ram:
+                    if pagina in paginas_futuras:
+                        indices_futuros.append(paginas_futuras.index(pagina))
+                    else:
+                        indices_futuros.append(float('inf'))  # Página nunca mais será usada
+
+                # Substituir a página com maior índice futuro (ou nunca usada)
+                pagina_a_remover = ram[indices_futuros.index(max(indices_futuros))]
+                ram.remove(pagina_a_remover)
+                ram.append(pagina_atual)
+
+    print("RAM final:", ram)
+    print("Faltas de página:", page_faults)
+    return page_faults
+    
 def process_memory(array_list):
     n_paginas = int(array_list[0][0])
     n_molduras = int(array_list[1][0])
