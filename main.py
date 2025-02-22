@@ -28,26 +28,108 @@ def otimo(array_list, n_molduras):
                 ram.remove(pagina_a_remover)
                 ram.append(pagina_atual)
 
-    print("RAM final:", ram)
+   
     print("Faltas de página:", page_faults)
     return page_faults
-    
+
+def nru(array_list, n_molduras, ciclo_clock):
+    ram = []  # Molduras na memória
+    page_faults = 0
+    bits_R = {}  # Dicionário para armazenar os bits R das páginas
+    bits_M = {}  # Dicionário para armazenar os bits M das páginas
+
+    for clock in range(len(array_list)):
+        pagina_atual = int(array_list[clock][0])  # Página acessada
+        tipo_acesso = array_list[clock][2]  # 'R' ou 'W'
+
+        # Atualizar bits R e M
+        if pagina_atual not in bits_R:
+            bits_R[pagina_atual] = 0
+        if pagina_atual not in bits_M:
+            bits_M[pagina_atual] = 0
+
+        # Se for um acesso de leitura ou escrita, definir bit R como 1
+        bits_R[pagina_atual] = 1
+        if tipo_acesso == 'W':
+            bits_M[pagina_atual] = 1
+
+        # Verificar se a página já está na RAM
+        if pagina_atual not in ram:
+            page_faults += 1
+
+            if len(ram) < n_molduras:  # Ainda há espaço na RAM
+                ram.append(pagina_atual)
+            else:  # Substituir uma página
+                # Classificar as páginas em categorias com base nos bits R e M
+                categorias = {0: [], 1: [], 2: [], 3: []}
+                for pagina in ram:
+                    categoria = (bits_R[pagina] << 1) | bits_M[pagina]
+                    categorias[categoria].append(pagina)
+
+                # Priorizar categorias: 0 > 1 > 2 > 3
+                for prioridade in range(4):
+                    if categorias[prioridade]:
+                        pagina_a_remover = categorias[prioridade][0]
+                        break
+
+                ram.remove(pagina_a_remover)
+                ram.append(pagina_atual)
+
+        # Redefinir os bits R a cada ciclo_clock ciclos
+        if clock % ciclo_clock == 0:
+            for pagina in ram:
+                bits_R[pagina] = 0
+
+    print("Faltas de página (NRU):", page_faults)
+    return page_faults
+
+def relogio(array_list, n_molduras):
+    ram = []  # Molduras na memória
+    page_faults = 0
+    ponteiro = 0  # Ponteiro circular
+    bits_R = {}  # Bits R das páginas
+
+    for referencia in array_list:
+        pagina_atual = int(referencia[0])  # Página acessada
+
+        # Atualizar bit R da página atual
+        if pagina_atual not in bits_R:
+            bits_R[pagina_atual] = 0
+        bits_R[pagina_atual] = 1
+
+        # Verificar se a página já está na RAM
+        if pagina_atual not in ram:
+            page_faults += 1
+
+            if len(ram) < n_molduras:  # Ainda há espaço na RAM
+                ram.append(pagina_atual)
+            else:  # Substituir uma página usando ponteiro circular
+                while True:
+                    pagina_candidata = ram[ponteiro]
+                    if bits_R[pagina_candidata] == 0:  # Página não referenciada recentemente
+                        ram[ponteiro] = pagina_atual
+                        break
+                    else:  # Página foi referenciada recentemente; redefinir bit R e avançar ponteiro
+                        bits_R[pagina_candidata] = 0
+                        ponteiro = (ponteiro + 1) % n_molduras
+
+    print("Faltas de página (Relógio):", page_faults)
+    return page_faults
+
+def wsclock(array_list, n_molduras):
+    pass
+
 def process_memory(array_list):
     n_paginas = int(array_list[0][0])
     n_molduras = int(array_list[1][0])
     time_R = int(array_list[2][0])
     del array_list[0:3]
-    otimo(array_list, n_molduras)
-    # fifo_result = fifo(array_list)
-    # sjf_result = sjf(array_list)
-    # srt_result = srt(array_list)
-    # rr_result = rr(array_list, quantum)
-    # array_all = []
-    # array_all.append(fifo_result)
-    # array_all.append(sjf_result)
-    # array_all.append(srt_result)
-    # array_all.append(rr_result)
-    # return array_all
+    array_all = []
+    array_all.append(otimo(array_list, n_molduras))
+    array_all.append(nru(array_list, n_molduras, time_R))
+    array_all.append(relogio(array_list, n_molduras))
+    # array_all.append(wsclock(array_list, n_molduras))
+    return array_all
 
 
 
@@ -61,14 +143,13 @@ def text_generator(read_file, write_file):
                 for element in line.split():
                     array_temp.append(element)
                 array_list.append(array_temp)
-        process_memory(array_list)
         #Colocar instruções no txt de resultado
-        # for line in process_memory(array_list):
-        #     write_file.write(line + '\n')
+        for line in process_memory(array_list):
+             write_file.write(str(line) + '\n')
 
 
 #Mude a quantidade de arquivos
-n_arquivos = 1
+n_arquivos = 2
 #Coloque o caminho exato do arquivo, ex: pc/documentos/testes/
 caminho_arquivo = ""
 for i in range(0, n_arquivos):
