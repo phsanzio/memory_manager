@@ -24,9 +24,10 @@ def otimo(array_list, n_molduras):
                         indices_futuros.append(float('inf'))  # Página nunca mais será usada
 
                 # Substituir a página com maior índice futuro (ou nunca usada)
+                print(indices_futuros.index(max(indices_futuros)))
+                print(ram[indices_futuros.index(max(indices_futuros))])
                 pagina_a_remover = ram[indices_futuros.index(max(indices_futuros))]
-                ram.remove(pagina_a_remover)
-                ram.append(pagina_atual)
+                ram[ram.index(pagina_a_remover)] = pagina_atual
 
    
     print("Faltas de página:", page_faults)
@@ -216,7 +217,7 @@ def text_generator(read_file, write_file):
 
 
 #Mude a quantidade de arquivos
-n_arquivos = 2
+n_arquivos = 3
 #Coloque o caminho exato do arquivo, ex: pc/documentos/testes/
 caminho_arquivo = ""
 for i in range(0, n_arquivos):
