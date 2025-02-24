@@ -83,6 +83,7 @@ def nru(array_list, n_molduras, ciclo_clock):
     print("Faltas de página (NRU):", page_faults)
     return page_faults
 
+
 def relogio(array_list, n_molduras):
     ram = []  # Molduras na memória
     page_faults = 0
@@ -116,8 +117,75 @@ def relogio(array_list, n_molduras):
     print("Faltas de página (Relógio):", page_faults)
     return page_faults
 
-def wsclock(array_list, n_molduras):
-    pass
+
+def wsclock(referencias, n_molduras, ciclo_relogio):
+    ram = []  # Molduras na memória (buffer circular)
+    page_faults = 0
+    ponteiro = 0  # Ponteiro do relógio
+    timestamps = {}  # Último ciclo de acesso de cada página
+    bits_R = {}  # Bits de Referência
+
+    for ref in referencias:
+        # Extrair os valores da referência
+        pagina_atual = int(ref[0])  # Número da página
+        t_atual = int(ref[1])       # Tempo de acesso
+        operacao = ref[2]           # Operação (R ou W)
+
+        # Atualizar bit R e timestamp
+        if pagina_atual not in bits_R:
+            bits_R[pagina_atual] = 0  # Página nova assume R=0 inicialmente
+            timestamps[pagina_atual] = t_atual  # Define o tempo de acesso
+
+        bits_R[pagina_atual] = 1  # Sempre marca a página como usada
+        timestamps[pagina_atual] = t_atual  # Atualiza o tempo de acesso
+
+        # Se a página já está na RAM, não há falta de página
+        if pagina_atual in ram:
+            continue
+
+        # Caso contrário, ocorre uma falta de página
+        page_faults += 1
+
+        if len(ram) < n_molduras:
+            ram.append(pagina_atual)  # Ainda há espaço na RAM
+        else:
+            inicio = ponteiro  # Salva a posição inicial do ponteiro
+            substituida = False
+
+            while True:
+                pagina_candidata = ram[ponteiro]
+                idade_pagina = t_atual - timestamps[pagina_candidata]  # Tempo desde o último uso
+
+                # Verifica se o bit R foi resetado após 'ciclo_relogio' ciclos
+                if t_atual - timestamps[pagina_candidata] >= ciclo_relogio:
+                    bits_R[pagina_candidata] = 0
+
+                if bits_R[pagina_candidata] == 0 and idade_pagina > 6:
+                    # Página pode ser substituída
+                    ram[ponteiro] = pagina_atual
+                    timestamps[pagina_atual] = t_atual
+                    bits_R[pagina_atual] = 1  # Nova página é marcada como referenciada
+                    substituida = True
+                    break
+                else:
+                    bits_R[pagina_candidata] = 0  # Resetar bit R
+                    ponteiro = (ponteiro + 1) % n_molduras  # Avançar ponteiro
+
+                    if ponteiro == inicio:  # Se rodou toda a RAM e não achou, substituir qualquer página
+                        ram[ponteiro] = pagina_atual
+                        timestamps[pagina_atual] = t_atual
+                        bits_R[pagina_atual] = 1  # Nova página é marcada como referenciada
+                        substituida = True
+                        break
+
+            if not substituida:
+                ram[ponteiro] = pagina_atual
+                timestamps[pagina_atual] = t_atual
+                bits_R[pagina_atual] = 1  # Nova página é marcada como referenciada
+
+    print("Faltas de página (WSClock):", page_faults)
+    return page_faults
+
 
 def process_memory(array_list):
     n_paginas = int(array_list[0][0])
@@ -128,9 +196,8 @@ def process_memory(array_list):
     array_all.append(otimo(array_list, n_molduras))
     array_all.append(nru(array_list, n_molduras, time_R))
     array_all.append(relogio(array_list, n_molduras))
-    # array_all.append(wsclock(array_list, n_molduras))
+    array_all.append(wsclock(array_list, n_molduras, time_R))
     return array_all
-
 
 
 def text_generator(read_file, write_file):
